@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_note/db_helper.dart';
 import 'package:flutter_note/models/note_model.dart';
+import 'package:flutter_note/pages/firestore_helpper.dart';
 import 'package:flutter_note/pages/note_editor_page.dart';
 
 class NoteHomePage extends StatefulWidget {
@@ -12,6 +13,7 @@ class NoteHomePage extends StatefulWidget {
 
 class _NoteListPageState extends State<NoteHomePage> {
   final DbHelper dbHelper = DbHelper.instance;
+  final FirestoreHelpper fsHelper = FirestoreHelpper();
 
   List<NoteModel> _notes = [];
 
