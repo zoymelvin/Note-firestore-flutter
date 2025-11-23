@@ -2,19 +2,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_note/models/note_model.dart';
 
 class FirestoreHelper {
-
   final noteRef = FirebaseFirestore.instance
-      .collection('notes') 
+      .collection('notes')
       .withConverter<NoteModel>(
         fromFirestore: (snapshot, _) => NoteModel.fromJson(snapshot.data()!),
         toFirestore: (note, _) => note.toJson(),
       );
 
-
   Future<DocumentReference<NoteModel>> addNote(NoteModel note) async {
     final doc = await noteRef.add(note);
+
     final noteRefUpdated = noteRef.doc(doc.id);
-    await noteRefUpdated.update({'note_id': doc.id});
+    //noteRefUpdated.set(note..noteId = doc.id);
+    noteRefUpdated.update({'note_id': doc.id});
+
+    // result.update({'note_id': result.id});
     return doc;
   }
 
@@ -22,7 +24,6 @@ class FirestoreHelper {
     final querySnapshot = await noteRef
         .orderBy('created_at', descending: true)
         .get();
-    
     return querySnapshot.docs.map((doc) => doc.data()).toList();
   }
 
@@ -40,6 +41,6 @@ class FirestoreHelper {
   }
 
   Stream<QuerySnapshot<NoteModel>> getNoteStream() {
-    return noteRef.orderBy('created_at', descending: true).snapshots();
+    return noteRef.snapshots();
   }
 }
