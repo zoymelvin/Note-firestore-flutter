@@ -1,8 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_note/db_helper.dart';
+import 'package:flutter_note/firestore_helpper.dart';
 import 'package:flutter_note/models/note_model.dart';
-import 'package:flutter_note/pages/firestore_helpper.dart';
 import 'package:flutter_note/pages/note_editor_page.dart';
+import 'package:flutter_note/pages/note_update_page.dart';
 
 class NoteHomePage extends StatefulWidget {
   const NoteHomePage({super.key});
@@ -12,8 +13,8 @@ class NoteHomePage extends StatefulWidget {
 }
 
 class _NoteListPageState extends State<NoteHomePage> {
-  final DbHelper dbHelper = DbHelper.instance;
-  final FirestoreHelpper fsHelper = FirestoreHelpper();
+  //final DbHelper dbHelper = DbHelper.instance;
+  final FirestoreHelper fsHelper = FirestoreHelper();
 
   List<NoteModel> _notes = [];
 
@@ -26,7 +27,7 @@ class _NoteListPageState extends State<NoteHomePage> {
   Future<void> _loadNotes() async {
     // TODO: Load notes from database
     // Simulating database with sample data
-    final noteList = await dbHelper.fetchNotes();
+    final noteList = await fsHelper.fetchNotes();
 
     setState(() {
       _notes = noteList;
@@ -42,26 +43,24 @@ class _NoteListPageState extends State<NoteHomePage> {
 
     // Reload notes after returning from create page
     if (result != null) {
-      _loadNotes();
+      //_loadNotes();
     }
   }
 
   void _navigateToEditNote(NoteModel note) async {
-    // Navigate to edit note page
-    // final result = await Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => NoteEditorPage(note: note),
-    //   ),
-    // );
+    //Navigate to edit note page
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => NoteUpdatePage(note: note)),
+    );
 
-    // Reload notes after returning from edit page
+    // //Reload notes after returning from edit page
     // if (result != null) {
     //   _loadNotes();
     // }
   }
 
-  void _deleteNote(int noteId) {
+  void _deleteNote(String noteId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -74,10 +73,11 @@ class _NoteListPageState extends State<NoteHomePage> {
           ),
           TextButton(
             onPressed: () {
-              // TODO: Delete from database
-              // setState(() {
-              //   //_notes.removeWhere((note) => note.id == noteId);
-              // });
+              setState(() {
+                fsHelper.deleteNote(noteId.toString());
+              });
+              //_loadNotes();
+
               Navigator.pop(context);
               ScaffoldMessenger.of(
                 context,
@@ -109,7 +109,7 @@ class _NoteListPageState extends State<NoteHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('My Notes'), elevation: 0),
-      body: _notes.isEmpty ? _buildEmptyState() : _buildNoteList(),
+      body: _notes.isEmpty ? _buildEmptyState() : _buildStreamNoteList(),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToCreateNote,
         tooltip: 'Create new note',
@@ -184,6 +184,68 @@ class _NoteListPageState extends State<NoteHomePage> {
             onTap: () => _navigateToEditNote(note),
           ),
         );
+      },
+    );
+  }
+
+  Widget _buildStreamNoteList() {
+    return StreamBuilder<QuerySnapshot<NoteModel>>(
+      stream: fsHelper.getNoteStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return _buildEmptyState();
+        } else {
+          final notes = snapshot.data!.docs;
+          return ListView.builder(
+            padding: const EdgeInsets.all(8.0),
+            itemCount: notes.length,
+            itemBuilder: (context, index) {
+              final note = notes.elementAt(index).data();
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  title: Text(
+                    note.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      Text(
+                        note.content,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.grey[700]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _formatDate(DateTime.parse(note.createdAt)),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: () => _deleteNote(note.noteId),
+                  ),
+                  onTap: () => _navigateToEditNote(note),
+                ),
+              );
+            },
+          );
+        }
       },
     );
   }

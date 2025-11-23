@@ -2,20 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_note/firestore_helpper.dart';
 import 'package:flutter_note/models/note_model.dart';
 
-class NoteEditorPage extends StatefulWidget {
-  const NoteEditorPage({Key? key}) : super(key: key);
+class NoteUpdatePage extends StatefulWidget {
+  final NoteModel note;
+  const NoteUpdatePage({super.key, required this.note});
 
   @override
-  State<NoteEditorPage> createState() => _NoteEditorPageState();
+  State<NoteUpdatePage> createState() => _NoteUpdatePageState();
 }
 
-class _NoteEditorPageState extends State<NoteEditorPage> {
-  //final DbHelper dbHelper = DbHelper.instance;
+class _NoteUpdatePageState extends State<NoteUpdatePage> {
   final FirestoreHelper fsHelper = FirestoreHelper();
 
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
+
+  @override
+  void initState() {
+    _titleController.text = widget.note.title;
+    _contentController.text = widget.note.content;
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -30,12 +37,12 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
       final title = _titleController.text;
       final content = _contentController.text;
 
-      final result = fsHelper.addNote(
+      final result = fsHelper.updateNote(
         NoteModel(
-          noteId: null,
+          noteId: widget.note.noteId,
           title: title,
           content: content,
-          createdAt: DateTime.now().toIso8601String(),
+          createdAt: widget.note.createdAt,
           updatedAt: DateTime.now().toIso8601String(),
           pinned: false,
         ),
@@ -43,7 +50,7 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
 
       // TODO: Save the note to database or storage
       print(
-        'Saving note - Title: $title, Content: $content, Id: ${await result}',
+        'Saving note - Title: $title, Content: $content, Id: ${widget.note.noteId}',
       );
 
       // Show success message
@@ -165,8 +172,8 @@ class _NoteEditorPageState extends State<NoteEditorPage> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: _saveNote,
-                      icon: const Icon(Icons.save),
-                      label: const Text('Save'),
+                      icon: const Icon(Icons.check),
+                      label: const Text('Update'),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),

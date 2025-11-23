@@ -11,8 +11,7 @@ class DbHelper {
   static final DbHelper instance = DbHelper._privateConstructor();
 
   Future<Database> _initialDatabase() async {
-    // Implementation for initializing the database
-    // This is a placeholder; actual implementation will vary
+
     return await openDatabase(
       join(await getDatabasesPath(), _databaseName),
       version: _databaseVersion,
