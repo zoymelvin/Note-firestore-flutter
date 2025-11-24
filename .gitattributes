@@ -1,0 +1,4 @@
+*.js linguist-vendored
+*.html linguist-vendored
+web/** linguist-vendored
+*.dart linguist-detectable
